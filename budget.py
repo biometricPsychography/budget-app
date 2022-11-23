@@ -7,7 +7,6 @@ class Category :
         self.ledger = []
         self.current_total = 0
         self.withdrawal_total = 0
-        print(self.name, 'constructed')
 
         # Pad cents to always have two digits
     def format_currency(self, string: str) :
@@ -78,7 +77,7 @@ class Category :
         
         if amount <= 0 :
             print("You can't check the presence of a negative or 0 amount. Use positive numbers only.")
-        elif self.current_total - amount <= 0 :
+        elif self.current_total - amount < 0 :
             return False
         else :
             return True
@@ -109,7 +108,7 @@ class Category :
             amount_overflow = formatted_amount[8:]
 
             if len(desc_overflow) > 0 :
-                string_left = item['description'][:24]
+                string_left = item['description'][:23]
             else :
                 string_left = item['description']
 
@@ -159,13 +158,13 @@ def create_spend_chart(categories) :
 
         category_and_percentage_list.append([category, nearest_ten_rounded_down_percentage])
 
-    def build_chart_line(cat_and_percent_list) :
-
-        line_list = []
 
 
-        chart_scaffold = ''
-        chart_left_axis_literal = (
+    line_list = []
+
+
+    chart_scaffold = ''
+    chart_left_axis_literal = (
 '''
 100| 
  90| 
@@ -179,48 +178,95 @@ def create_spend_chart(categories) :
  10| 
   0| 
 '''
-        )
+    )
 
-        reversed_line_list = chart_left_axis_literal.strip().split('\n')[::-1]
-        reversed_line_list[0] += ' '
+    reversed_line_list = chart_left_axis_literal.strip().split('\n')[::-1]
+    reversed_line_list[0] += ' '
 
-        list_of_item_bar_lists = []
+    list_of_item_bar_lists = []
 
-        for item in cat_and_percent_list :
+    for item in category_and_percentage_list :
+        # list of a single bar's component chars (and spacing for next bar)
+        this_item_bar_list = []
 
-            this_item_bar_list = []
-
-            bar_height = int(item[1]) / 10 + 1
-            i = 0
-            while i < bar_height :
-                this_item_bar_list.append('o  ')
-                i += 1
-            
-            graph_top_and_bar_height_diff = 11 - bar_height 
-
-            graph_top_and_bar_height_diff
-            i = 0
-            while i < graph_top_and_bar_height_diff :
-                this_item_bar_list.append('   ')
-                i += 1
-
-            list_of_item_bar_lists.append(this_item_bar_list)
+        bar_height = int(item[1]) / 10 + 1
+        i = 0
+        while i < bar_height :
+            this_item_bar_list.append('o  ')
+            i += 1
         
-        for list in list_of_item_bar_lists :
-            i = 0
-            for bar_element in list :
-                reversed_line_list[i] += bar_element
-                i += 1
+        graph_top_and_bar_height_diff = 11 - bar_height 
 
+        graph_top_and_bar_height_diff
+        i = 0
+        while i < graph_top_and_bar_height_diff :
+            this_item_bar_list.append('   ')
+            i += 1
 
-
-        print(reversed_line_list)
-
-        print('\n'.join(reversed_line_list[::-1]))
+        list_of_item_bar_lists.append(this_item_bar_list)
     
-    build_chart_line(category_and_percentage_list)
+    # add bars to list that is used to create final string
+    for bar in list_of_item_bar_lists :
+        i = 0
+        for bar_element in bar :
+            reversed_line_list[i] += bar_element
+            i += 1
+
+
+
+    # add bottom axis
+    reversed_line_list.insert(0, '    ' + '---' * len(list_of_item_bar_lists) + '-')
+
+    # add title
+    reversed_line_list.append('Percentage spent by category')
+
+    name_len_then_cat_list = []
+    # add labels for bars
+    for category in categories :
+        name_len_then_cat_list.append([len(category.name), category])
+
+    print(name_len_then_cat_list)
+    print(name_len_then_cat_list.sort(key=lambda item : item[0]))
+    print(name_len_then_cat_list)
+
+    longest_named_cat = name_len_then_cat_list[-1][1]
+    longest_name_list = [*longest_named_cat.name]
+
+
+    # build labels
+
+    # start from bottom axis going down now
+    line_list = reversed_line_list[::-1]
+
+    # create 2d list of characters in each label and add space as necessary to shorter labels
+    label_list = []
+    for category in categories :
+        if category.name == longest_named_cat :
+            label_list.append(longest_name_list)
+        else :
+            hanging_space_count = len(longest_named_cat.name) - len(category.name)
+            label_list.append([*(category.name + hanging_space_count * ' ')])
+    
+    # create lines from 2d label_list
+    sub_axis_line_list = []
+    i = 0
+    for letter in longest_name_list :
+        line = "     "
+        for label in label_list :
+            line += label[i] + '  '
+
+        sub_axis_line_list.append(line)
+        i += 1
+
+
+    line_list += sub_axis_line_list
+
+
+
+    return('\n'.join(line_list))
+
             
                 
 
 # print(vg_budget)
-create_spend_chart([vg_budget, food_budget])
+# create_spend_chart([vg_budget, food_budget])
